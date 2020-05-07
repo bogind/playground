@@ -12,7 +12,7 @@ $.getJSON('./empty_style.json',function(data){
         center: [34.799722, 31.258889], 
         zoom: 6,
         minZoom: 0,
-        maxZoom: 16,
+        maxZoom: 18,
         attributionControl: false,
         customAttribution: `just playing around, data from osm, or someplace else`
     });
@@ -34,6 +34,14 @@ $.getJSON('./empty_style.json',function(data){
               }
             })
 
+        map.addSource('bldg',{
+            'type': 'geojson',
+            'data' : {
+                "type": "FeatureCollection",
+                "features": []
+                }
+            })
+
         map.addLayer({
             "id": "nb-extruded",
             "type": "fill-extrusion",
@@ -41,7 +49,7 @@ $.getJSON('./empty_style.json',function(data){
             "paint": {
               "fill-extrusion-color": "rgba(117, 31, 31, 0.47)",
               "fill-extrusion-translate": [0, 0],
-              "fill-extrusion-height": 50,
+              "fill-extrusion-height": 5,
               "fill-extrusion-opacity": 0.5
             },
             "minzoom": 11
@@ -67,8 +75,36 @@ $.getJSON('./empty_style.json',function(data){
         fetch(tempUrl)
             .then(handleResponse)
 
+        map.addLayer({
+            "id": "bldg-extruded",
+            "type": "fill-extrusion",
+            "source": "bldg",
+            "minzoom": 16,
+            "paint": {
+              "fill-extrusion-color": "rgba(165, 200, 165, 1)",
+              "fill-extrusion-base": 0,
+              "fill-extrusion-height": 70,
+              "fill-extrusion-opacity": 0.5
+            }
+          })
         
     
+    })
+
+    map.on('moveend', function() {
+        zoom = map.getZoom()
+        if(zoom >= 15){
+            bounds = map.getBounds()
+            ne = bounds.getNorthEast()
+            se = bounds.getSouthEast()
+            sw = bounds.getSouthWest()
+            nw = bounds.getNorthWest()
+            queryUrl = `http://${gsip}:${gsport}/geoserver/bntl/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=bntl:buildings_within_bbox&outputFormat=application%2Fjson&viewparams=X1:${ne.lng};Y1:${ne.lat};X2:${se.lng};Y2:${se.lat};X3:${sw.lng};Y3:${sw.lat};X4:${nw.lng};Y4:${nw.lat}`
+            $.getJSON(queryUrl,function(data){
+                map.getSource('bldg').setData(data);
+            })
+            
+        }
     })
 })
 let baseObject = {
